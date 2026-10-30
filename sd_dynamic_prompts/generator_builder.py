@@ -34,7 +34,6 @@ class GeneratorBuilder:
         self._is_combinatorial = False
         self._is_magic_prompt = False
         self._is_attention_grabber = False
-
         self._combinatorial_batches = 1
         self._magic_model = None
         self._magic_prompt_length = 100
@@ -65,7 +64,6 @@ class GeneratorBuilder:
             is_attention_grabber: {self._is_attention_grabber}
             min_attention: {self._min_attention}
             max_attention: {self._max_attention}
-
         """,
         )
 
@@ -111,7 +109,6 @@ class GeneratorBuilder:
         if not magic_model:
             self._is_magic_prompt = False
             return self
-
         self._magic_model = magic_model
         self._magic_prompt_length = magic_prompt_length
         self._magic_temp_value = magic_temp_value
@@ -156,7 +153,6 @@ class GeneratorBuilder:
             generator = self.create_jinja_generator(self._context)
         else:
             generator = self.create_basic_generator()
-
         if self._is_magic_prompt:
             from sd_dynamic_prompts.magic_prompt import (
                 SpecialSyntaxAwareMagicPromptGenerator,
@@ -172,7 +168,6 @@ class GeneratorBuilder:
                 blocklist_regex=self._magic_blocklist_regex,
                 batch_size=self._magic_batch_size,
             )
-
         if self._is_attention_grabber:
             try:
                 from sd_dynamic_prompts.attention_generator import (
@@ -204,7 +199,20 @@ class GeneratorBuilder:
                 prompt_generator,
                 batches=self._combinatorial_batches,
             )
-        return RandomPromptGenerator(
+        # Keep regular Dynamic Prompts operational if the optional !! module
+        # cannot be loaded on a particular WebUI / Python installation.
+        try:
+            from sd_dynamic_prompts.per_image_generator import (
+                ScopeAwareRandomPromptGenerator,
+            )
+        except Exception:
+            logger.exception(
+                "Per-image !! variables unavailable; using stock random generator",
+            )
+            generator_class = RandomPromptGenerator
+        else:
+            generator_class = ScopeAwareRandomPromptGenerator
+        return generator_class(
             self._wildcard_manager,
             seed=self._seed,
             parser_config=self._parser_config,
@@ -245,7 +253,6 @@ class GeneratorBuilder:
                 "negative_prompt": original_negative_prompt,
             },
         }
-
         generator = JinjaGenerator(
             self._wildcard_manager,
             context,
