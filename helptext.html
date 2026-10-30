@@ -38,13 +38,24 @@
     You can add more wildcards by creating a text file with one term per line and name is mywildcards.txt. Place it in ${WILDCARD_DIR}. <code class="codeblock">__&#60;folder&#62;/mywildcards__</code> will then become available.<br><br>
 
     <h3><strong>Variables</strong></h3>
-    Set a variable like so:
-    <code class="codeblock">$${season=!{summer|autumn|winter|spring}}</code>
+    Assign a value to a variable, then use the variable name elsewhere in the prompt.
+    <br/><br/>
+    <strong>Variable evaluation scopes (random generation):</strong><br/>
+    <code class="codeblock">$${color={red|blue}}</code> Deferred assignment: the expression can be evaluated when referenced.<br/>
+    <code class="codeblock">$${color=!{red|blue}}</code> Immediate assignment: chooses a value for the prompt-generation batch and reuses it.<br/>
+    <code class="codeblock">$${color=!!{red|blue}}</code> <strong>Per-image immediate assignment (Vibe-Fix):</strong> chooses once for each generated image; all references to that variable within the same image reuse its value.<br/><br/>
 
-    Now use it like this:
-    <code class="codeblock">In $${season} I wear a $${season} shirt and $${season} trousers</code>
+    <strong>Mix batch-wide and per-image values in the same prompt:</strong>
+    <code class="codeblock">$${scene=!{beach|forest|city}}<br/>$${clothing_color=!!{red|blue|green|white}}<br/>A person in a $${scene} wearing a $${clothing_color} shirt and $${clothing_color} pants.</code>
+    In one batch, the scene stays the same while the clothing color is selected again for each image. Shirt and pants colors match within each image. Consecutive images may randomly pick the same color.<br/><br/>
 
-    For more details, and functionality, see the documentation (coming soon)
+    <strong>Notes:</strong> <code>!!</code> is a Vibe-Fix extension to the standard syntax and currently applies to random generation. Define the <code>!!</code> variable in the main prompt (for example, <code>$${color=!!__colors__}</code>); a definition appearing only inside a wildcard file does not activate the per-image path. Combinatorial and Jinja generation are unchanged. Variables in positive and negative prompts are resolved separately.<br/><br/>
+    <strong>Known limitations:</strong>
+    <ul>
+        <li><strong>Spacing:</strong> write <code>=!!</code> together, as in <code>$${color=!!{red|blue}}</code>. A space between <code>=</code> and <code>!!</code> (for example, <code>$${color= !!{red|blue}}</code>) does not activate per-image evaluation and can leave literal <code>!!</code> in the generated prompt.</li>
+        <li><strong>References in assignments:</strong> a per-image expression cannot reliably reference another variable assigned in the same prompt. For example, <code>$${scene=!{beach|forest}}$${x=!!$${scene}}$${x}</code> raises an undefined-variable error. Keep per-image expressions self-contained, using choices or wildcards directly (for example, <code>$${x=!!{beach|forest}}</code>), and repeat <code>$${x}</code> wherever its selected value is needed.</li>
+    </ul>
+    For other syntax, see the <a href="https://github.com/adieyal/sd-dynamic-prompts/blob/main/docs/SYNTAX.md">syntax cheatsheet</a>.
     <br><br>
     Find more settings on the <strong>Settings</strong> tab<br><br>
 
